@@ -1,8 +1,10 @@
 {
   "name": "wibo",
-  "version": "0.1.0",
-  "description": "Build Workspace tools and workflows on the Wibo Intelligence platform from a Claude chat, through the Wibo MCP server.",
-  "author": { "name": "Wibo" },
+  "version": "0.2.0",
+  "description": "Build Workspace tools, workflows and agents on the Wibo Intelligence platform from Claude, through the Wibo MCP server.",
+  "author": {
+    "name": "Wibo"
+  },
   "homepage": "https://github.com/wibofamily/skills",
   "repository": "https://github.com/wibofamily/skills"
 }

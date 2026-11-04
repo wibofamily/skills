@@ -1,0 +1,47 @@
+# Wibo agents: checks the agent folders under agents/ on pull requests and
+# publishes them on every push to main (unchanged agents add nothing).
+#
+# Setup, once:
+#   1. Copy this file to .github/workflows/wibo-agents.yml and the script to
+#      .wibo/wibo-agent.mjs (both from github.com/wibofamily/skills,
+#      plugins/wibo/skills/wibo-agent).
+#   2. In the Wibo Workspace, a workspace admin creates a personal access token
+#      with the scope "Create agents from Claude" (Settings, Account, Security,
+#      Personal access tokens), and stores it as the repository secret
+#      WIBO_TOKEN: gh secret set WIBO_TOKEN
+#
+# Run by hand: node .wibo/wibo-agent.mjs push agents --publish
+name: Wibo agents
+
+on:
+  pull_request:
+    paths: ["agents/**", ".wibo/wibo-agent.mjs", ".github/workflows/wibo-agents.yml"]
+  push:
+    branches: [main]
+    paths: ["agents/**", ".wibo/wibo-agent.mjs", ".github/workflows/wibo-agents.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wibo-agents-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  agents:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      WIBO_TOKEN: ${{ secrets.WIBO_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check the agents
+        if: github.event_name == 'pull_request'
+        run: node .wibo/wibo-agent.mjs check agents
+      - name: Publish the agents
+        if: github.event_name != 'pull_request'
+        run: node .wibo/wibo-agent.mjs push agents --publish

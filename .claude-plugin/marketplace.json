@@ -1,0 +1,14 @@
+{
+  "name": "wibo-skills",
+  "owner": { "name": "Wibo" },
+  "metadata": {
+    "description": "Skills for building on the Wibo Intelligence platform from Claude."
+  },
+  "plugins": [
+    {
+      "name": "wibo",
+      "source": "./plugins/wibo",
+      "description": "Build Workspace tools and workflows on the Wibo Intelligence platform from a Claude chat, through the Wibo MCP server."
+    }
+  ]
+}

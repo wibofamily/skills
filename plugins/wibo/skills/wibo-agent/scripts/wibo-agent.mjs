@@ -12,7 +12,12 @@
 // --token-env NAME reads the token from another variable (one per workspace in CI).
 
 import { readFile, readdir, stat, writeFile, mkdir } from "node:fs/promises";
+import { setDefaultAutoSelectFamily } from "node:net";
 import { basename, join, resolve } from "node:path";
+
+// Node's dual-stack connect (happy eyeballs) times out on networks with a broken IPv6 route to
+// the API's host while one address at a time connects at once: try the addresses in order.
+setDefaultAutoSelectFamily(false);
 
 const VERSION = "0.2.0";
 const SLUG = /^[a-z0-9][a-z0-9-]{0,62}$/;

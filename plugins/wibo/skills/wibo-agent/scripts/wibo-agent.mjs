@@ -19,7 +19,7 @@ import { basename, join, resolve } from "node:path";
 // the API's host while one address at a time connects at once: try the addresses in order.
 setDefaultAutoSelectFamily(false);
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 const SLUG = /^[a-z0-9][a-z0-9-]{0,62}$/;
 
 const USAGE = `wibo-agent ${VERSION}: Wibo agents as folders (agent.json + instructions.md)
@@ -29,6 +29,7 @@ const USAGE = `wibo-agent ${VERSION}: Wibo agents as folders (agent.json + instr
   wibo-agent push <dir>... [--publish]     save each as a draft (unchanged ones add nothing),
                                            then publish it with --publish
   wibo-agent try <dir|slug> "<message>"    one turn of the latest draft in a dry run
+                                           (stopped after --timeout seconds, default 45)
   wibo-agent publish <slug> [--version N]  publish the latest draft (or version N)
   wibo-agent pull <slug> [--into <dir>]    write an existing agent as a folder
   wibo-agent catalog                       what an agent of this workspace may use
@@ -36,7 +37,7 @@ const USAGE = `wibo-agent ${VERSION}: Wibo agents as folders (agent.json + instr
 
 A <dir> is an agent folder, or a folder of agent folders (push agents --publish).
 
-Options: --message "<text>" (change message of push), --version N, --into <dir>, --json,
+Options: --message "<text>" (change message of push), --version N, --into <dir>, --timeout S, --json,
          --token-env NAME (default WIBO_TOKEN)
 Environment: WIBO_TOKEN (scope agents.manage), WIBO_MCP_URL (default https://api.wibo.app/mcp)`;
 
@@ -48,7 +49,7 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--publish" || arg === "--json" || arg === "--help" || arg === "-h") flags[arg.replace(/^-+/, "")] = true;
-    else if (arg === "--message" || arg === "--version" || arg === "--into" || arg === "--token-env") {
+    else if (arg === "--message" || arg === "--version" || arg === "--into" || arg === "--token-env" || arg === "--timeout") {
       const value = argv[++i];
       if (value === undefined) usageError(`${arg} needs a value`);
       flags[arg.slice(2)] = value;
@@ -319,13 +320,22 @@ async function cmdTry(api, rest, flags) {
   let slug = target;
   if (await isDir(target)) slug = (await readAgent(resolve(target))).slug;
   else if (!SLUG.test(target)) usageError(`${target} is neither an agent folder nor a slug`);
-  const result = await api.call("agents_try", { slug, message, ...(versionFlag(flags) ? { versionNumber: versionFlag(flags) } : {}) });
+  let timeoutSeconds;
+  if (flags.timeout !== undefined) {
+    timeoutSeconds = Number(flags.timeout);
+    if (!Number.isInteger(timeoutSeconds) || timeoutSeconds < 10 || timeoutSeconds > 120) usageError("--timeout is a whole number of seconds from 10 to 120");
+  }
+  const result = await api.call("agents_try", { slug, message, ...(versionFlag(flags) ? { versionNumber: versionFlag(flags) } : {}), ...(timeoutSeconds ? { timeoutSeconds } : {}) });
   if (flags.json) return console.log(JSON.stringify(result, null, 2));
   console.log(`${slug} v${result.versionNumber} (${result.model}, dry run)\n`);
   console.log(result.answer || "(no answer)");
   if (result.toolCalls.length > 0) {
     console.log("\nTool calls:");
     for (const call of result.toolCalls) console.log(`  ${call.tool} ${JSON.stringify(call.args)}\n    -> ${JSON.stringify(call.result).slice(0, 400)}`);
+  }
+  if (result.finished === false) {
+    for (const call of result.waitingFor ?? []) console.log(`\nStill waiting after ${Math.round(call.waitedMs / 1000)}s: ${call.tool} ${JSON.stringify(call.args)}`);
+    console.log(`\nNot finished. ${result.note ?? ""}`);
   }
   console.log(`\n${result.usage.inputTokens} input and ${result.usage.outputTokens} output tokens, EUR ${result.costEur}, finish: ${result.finishReason ?? "?"}`);
 }

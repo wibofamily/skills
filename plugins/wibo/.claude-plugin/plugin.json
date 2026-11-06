@@ -1,6 +1,6 @@
 {
   "name": "wibo",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Build Workspace tools, workflows and agents on the Wibo Intelligence platform from Claude, through the Wibo MCP server.",
   "author": {
     "name": "Wibo"

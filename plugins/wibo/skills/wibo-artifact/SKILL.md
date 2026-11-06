@@ -11,7 +11,7 @@ A Wibo artifact published from a chat is **one module** (`artifact.tsx`, default
 
 The tools below come from the **Wibo MCP server**, `https://api.wibo.app/mcp`. If they are not available in this chat, stop and tell the person how to connect, then continue once they have:
 
-- **Claude Code**: in their Wibo Workspace, Settings, Account, Security, "Personal access tokens", create a token with the scopes offered (the publishing scope is offered to workspace admins only) and run the `claude mcp add` command the page shows once.
+- **Claude Code** with the `wibo` plugin: the plugin declares the server as `wibo`. They type `/mcp`, pick `wibo`, sign in in the browser and choose the workspace (publishing is offered to workspace admins only). Without the plugin: a personal access token from the Workspace (Settings, Account, Security) and the `claude mcp add` command that page shows.
 - **claude.ai or Claude Desktop**: Settings, Connectors, add a custom connector with the URL `https://api.wibo.app/mcp` and approve it in the Workspace page that opens.
 
 Publishing (`artifact_publish_draft`) needs the publishing scope; releasing (`artifact_release`) needs a workspace admin.

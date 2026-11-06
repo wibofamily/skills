@@ -5,20 +5,11 @@ Skills that teach Claude to build on the **Wibo Intelligence platform**: tools i
 | Skill | What it does |
 |---|---|
 | [wibo-artifact](plugins/wibo/skills/wibo-artifact/SKILL.md) | A Workspace tool (dashboard, form, list, report, calculator) written as one React module and published through the Wibo MCP server, reading the workspace's connections (HubSpot, Notion, a custom MCP server), keeping records, starting workflows |
-| [wibo-agent](plugins/wibo/skills/wibo-agent/SKILL.md) | An agent of the workspace (an assistant for a team, a scheduled agent) kept as a folder in a repository, checked, tried in a dry run and published through the Wibo MCP server, by hand or from GitHub Actions with the bundled script |
+| [wibo-agent](plugins/wibo/skills/wibo-agent/SKILL.md) | An agent of the workspace (an assistant for a team, a scheduled agent) built by talking to Claude: it asks a few questions, writes and saves a draft, opens a preview chat with the draft, fixes it from your notes, tests it and publishes it after your yes; optionally kept as a folder in a repository and published from GitHub Actions with the bundled script |
 
-## 1. Connect Claude to your workspace
+## 1. Install
 
-The skills drive the **Wibo MCP server**, `https://api.wibo.app/mcp`. Connect it once:
-
-- **Claude Code** (CLI or the desktop app's Code tab): in your Wibo Workspace open Settings, Account, Security, "Personal access tokens", create a token with the scopes offered and run the `claude mcp add` command the page shows (once: the token is not shown again). Publishing tools and workflows, and creating agents (scope "Create agents from Claude"), needs the workspace's admin role.
-- **claude.ai or Claude Desktop**: Settings, Connectors, "Add custom connector", URL `https://api.wibo.app/mcp`; approve it on the Workspace page that opens.
-
-Check: ask Claude to "call tenant_context". It answers your workspace, your name and role.
-
-## 2. Install the skills
-
-**Claude Code**, from any chat:
+**Claude Code** (CLI or the desktop app's Code tab), from any chat:
 
 ```
 /plugin install wibo --marketplace wibofamily/skills
@@ -26,13 +17,20 @@ Check: ask Claude to "call tenant_context". It answers your workspace, your name
 
 On a Claude Code older than 2.1.275: `/plugin marketplace add wibofamily/skills`, then `/plugin install wibo@wibo-skills`. `/plugin marketplace update wibo-skills` picks up new versions.
 
-**claude.ai and Claude Desktop**: download [wibo-artifact.zip](https://github.com/wibofamily/skills/releases/latest/download/wibo-artifact.zip) or [wibo-agent.zip](https://github.com/wibofamily/skills/releases/latest/download/wibo-agent.zip) and upload it under Settings, Capabilities, Skills. The agent skill's script and GitHub Actions template need Claude Code or a terminal.
+The plugin brings the skills and the **Wibo MCP server** (`https://api.wibo.app/mcp`). Sign in once: type `/mcp`, pick `wibo`, sign in in the browser and choose your workspace. No token to copy. Publishing tools and workflows, and creating agents, needs the workspace's admin role. If you added the server by hand before (`claude mcp add`), remove that entry (`claude mcp remove wibo`) so the tools are not listed twice.
+
+Check: ask Claude to "call tenant_context". It answers your workspace, your name and role.
+
+## 2. Other clients and CI
+
+- **claude.ai or Claude Desktop**: Settings, Connectors, "Add custom connector", URL `https://api.wibo.app/mcp`; approve it on the Workspace page that opens. For the skills, download [wibo-artifact.zip](https://github.com/wibofamily/skills/releases/latest/download/wibo-artifact.zip) or [wibo-agent.zip](https://github.com/wibofamily/skills/releases/latest/download/wibo-agent.zip) and upload it under Settings, Capabilities, Skills.
+- **Scripts and GitHub Actions**: a personal access token (Workspace, Settings, Account, Security, "Personal access tokens") in the environment variable `WIBO_TOKEN`. The agent skill's script and GitHub Actions template need Claude Code or a terminal.
 
 ## 3. Build
 
 Describe what you need in plain words: who uses it, what they see, where the data comes from, what they do with it. For example: *"Build a Wibo tool for the sales team: open deals by stage and owner from HubSpot, and the monthly total against a goal of 1.2 M EUR, in Italian."* Claude reads your workspace, writes the tool and publishes a draft you open under **Tools**; iterate in the chat, then ask a workspace admin (or Claude, if you are one) to release it.
 
-An agent: *"Create a Wibo agent for the HR team that answers questions about people and teams and drafts emails, in Italian."* Claude writes `agents/<slug>/agent.json` and `instructions.md` in your project, checks them against your workspace, tries the draft with a few questions and publishes it when you say so; the agent appears under **Agents**. To publish from a repository, copy the skill's `scripts/wibo-agent.mjs` to `.wibo/` and `assets/wibo-agents.yml` to `.github/workflows/`, and set the secret `WIBO_TOKEN`.
+An agent: *"Create a Wibo agent for the HR team that answers questions about people and teams and drafts emails, in Italian."* Claude asks a few questions, writes the agent, saves it as a draft and opens a **preview**: a chat with the draft in your Workspace, where nothing is written or sent. Chat with it, rate the answers, leave notes, then tell Claude you are done: it reads your notes, fixes the agent, tests it again and publishes it when you say so. The agent appears under **Agents**. To publish from a repository, copy the skill's `scripts/wibo-agent.mjs` to `.wibo/` and `assets/wibo-agents.yml` to `.github/workflows/`, and set the secret `WIBO_TOKEN`.
 
 ## Maintaining this repository
 

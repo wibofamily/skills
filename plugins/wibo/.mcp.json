@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "wibo": {
+      "type": "http",
+      "url": "https://api.wibo.app/mcp"
+    }
+  }
+}

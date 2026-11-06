@@ -21,8 +21,11 @@ A Wibo agent is a **definition**: its instructions (the system prompt), the tool
 The tools come from the **Wibo MCP server** (`https://api.wibo.app/mcp`), which this plugin declares as `wibo`.
 
 - **No `agents_*` tools, or a Wibo tool answers "unauthorized":** the person has to sign in once. Tell them, in one sentence, to type `/mcp`, pick `wibo`, sign in in the browser and choose the workspace. Then continue.
-- **Signed in, but no `agents_*` tools:** creating agents needs the workspace's admin role. Tell them to ask a workspace admin, and stop.
-- **Name the workspace before the first save:** call `tenant_context` and say which workspace you are working on. A person who builds on several workspaces signs each in as its own server entry.
+- **Signed in, but no `agents_*` tools:** the sign-in did not grant agent building. Tell them to sign in again (`/mcp`, `wibo`, re-authenticate) and keep "Build agents of your own" (or, for admins, "Create agents") ticked on the consent page.
+- **Name the workspace and the role before the first save:** call `tenant_context`, say which workspace you are working on, and note the person's role.
+  - An **admin** builds agents for the workspace and publishes them.
+  - A **member** builds agents of their own: private (only they see them) until an admin approves publishing them to the workspace. Say this once, before you start.
+  - A person who builds on several workspaces signs each in as its own server entry.
 - **Wibo tools listed twice** (a server added by hand earlier, plus this plugin's): use either. Offer to remove the manual one (`claude mcp remove wibo`); run it yourself after their yes.
 
 ## 1. Understand
@@ -37,7 +40,7 @@ Then ask, **in one message, at most five questions**, and only what you cannot i
 - **What it must never do or say.**
 - **Two or three real questions with the right answers.** These become the first test cases.
 
-If an existing agent already does most of it, propose changing that one instead. An agent listed with a `package` is overwritten by the package's next upgrade, so create a separate agent instead.
+If an existing agent already does most of it, propose changing that one instead. An agent listed with a `package` is overwritten by the package's next upgrade, so create a separate agent instead. A member can change only the agents `agents_list` marks `mine`; for another one, propose a new agent of their own.
 
 ## 2. Plan
 
@@ -53,7 +56,8 @@ Show the plan in about five lines, then go on unless they object:
   - Shared suits company references (a price list, a handbook): everyone who uses the agent can read whatever that account can read.
   - Personal suits per-person data (my tasks, my mail): each person sees only their own.
 - **The model role**, never a model name.
-- **Schedules**, if any.
+- **Schedules**, if any. A member's private agent runs its schedules as them.
+- **Who it is for**: every member, or an audience (roles, departments by name, people). Admins set it; a member asks for it in the publish request.
 - **How you will test it.**
 
 **The app is not in the catalog's connections:** connect it now, before you build.
@@ -132,7 +136,9 @@ Then:
 
 ## 4. Preview
 
-Call `agents_preview` with the slug. It answers a link to a chat with the draft in the person's Workspace. Open it for them (`open "<url>"` on macOS, `xdg-open` on Linux) and tell them, in two or three lines:
+Call `agents_preview` with the slug. It answers a link to a chat with the draft in the person's Workspace.
+
+An admin whose agent serves people unlike them (another department, a member without their access) can preview as one of those people: `agents_preview` or `agents_try` with `previewAs` (an email or identity id). Their role, departments and audience apply; a real person's own connections and private data are never used (those tools say they would be called, and are not). Suggest it when the answers depend on who asks. Open it for them (`open "<url>"` on macOS, `xdg-open` on Linux) and tell them, in two or three lines:
 
 - chat with it as their colleagues would;
 - rate the answers and write a note on any answer that is wrong or could be better;
@@ -174,11 +180,19 @@ Only after the person says so. First call `agents_publish_preview` with the slug
 
 Name any failing test explicitly. If the preview says the preflight blocks publishing, fix that first. If they confirm:
 
-1. Call `agents_publish`. The draft becomes the active version, the agent appears under Agents for the workspace's members, and its schedules go live.
+**An admin:**
+
+1. Call `agents_publish` (with `audience` when it is for some people only). The draft becomes the active version, the agent appears under Agents for its audience, and its schedules go live.
 2. In a repository, commit the folder with a plain message.
 3. Tell them the agent's name and where to find it.
 
-To undo, publish the previous version (`agents_publish` with `versionNumber`).
+To undo, publish the previous version (`agents_publish` with `versionNumber`). To change who it is for later: `agents_set_audience`.
+
+**A member:**
+
+1. `agents_publish` publishes it **for them alone**: they find it under Agents and use it; nobody else sees it. Offer this first, so they can use it for real before asking.
+2. When they want it for colleagues: `agents_request_publish`, with the audience they want and a one-line note for the admin. The admin reads the same summary in the Workspace Inbox and approves or declines.
+3. Tell them the request is with the workspace's admins. Later, `agents_list` shows its status and the admin's note; after an approval the agent is the workspace's, and only an admin publishes its next versions (the member keeps building drafts and asks again).
 
 ## 7. After publishing
 
@@ -189,13 +203,21 @@ When the person asks how the agent is doing, and when you come back to an agent 
 3. **Improve**: every thumbs-down candidate it lists becomes a test case (ask the person for the right answer when you cannot tell). Fix the definition, run the tests, publish again after their yes (steps 3 to 6).
 4. **Health check**: every morning the platform checks published agents (connections that need a new sign-in, tools no longer offered, budget caps) and emails the people who built them, once per problem a day. A connection that needs a new sign-in: `connections_connect` again. A tool gone: change the definition.
 
-**Archive**: `agents_archive` takes an agent out of Agents (members lose it, its schedules stop); its versions are kept, and `agents_restore` puts it back as it was. Archive only when the person asks, after saying who loses it. An agent that came with a package cannot be archived.
+**Archive** (admins): `agents_archive` takes an agent out of Agents (members lose it, its schedules stop); its versions are kept, and `agents_restore` puts it back as it was. Archive only when the person asks, after saying who loses it. An agent that came with a package cannot be archived.
 
 ## 8. Change an existing agent
 
 1. Start from `agents_get` and `agents_evals_get`, or pull it into a folder (`node .wibo/wibo-agent.mjs pull <slug>`, which you run yourself; it writes `evals.jsonl` too).
 2. Change it, then follow steps 3 to 6, saving with `baseVersionNumber` set to the version you read.
 3. In a repository, if the folder is older than the platform's latest version, pull first.
+
+## 9. Move an agent to another workspace
+
+For example from a demo workspace to the client's:
+
+1. `agents_export` on the source workspace gives a bundle: the definition, the test cases and what the agent needs (connections, packages, model role, approvers).
+2. Connect to the target workspace (its own server entry) and `agents_check` the definition there. Fix what it lacks first: connect the apps (section 2), ask for the packages, map the approvers to that workspace's people.
+3. `agents_save_draft` with `baseVersionNumber` 0, then `agents_evals_save` with the cases, then preview, test and publish there as usual. Never move a demo's invented facts into a client's instructions.
 
 ## Rules
 

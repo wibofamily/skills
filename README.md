@@ -17,14 +17,14 @@ Skills that teach Claude to build on the **Wibo Intelligence platform**: tools i
 
 On a Claude Code older than 2.1.275: `/plugin marketplace add wibofamily/skills`, then `/plugin install wibo@wibo-skills`. `/plugin marketplace update wibo-skills` picks up new versions.
 
-The plugin brings the skills and the **Wibo MCP server** (`https://api.wibo.app/mcp`). Sign in once: type `/mcp`, pick `wibo`, sign in in the browser and choose your workspace. No token to copy. Publishing tools and workflows, and creating agents, needs the workspace's admin role. If you added the server by hand before (`claude mcp add`), remove that entry (`claude mcp remove wibo`) so the tools are not listed twice.
+The plugin brings the skills and the **Wibo MCP server** (`https://api.wibo.app/mcp`). Sign in once: type `/mcp`, pick `wibo`, sign in in the browser and choose your workspace. No token to copy. Every member drafts tools and builds agents of their own; a workspace admin releases tools, publishes agents to the whole workspace and publishes workflows. If you added the server by hand before (`claude mcp add`), remove that entry (`claude mcp remove wibo`) so the tools are not listed twice.
 
 Check: ask Claude to "call tenant_context". It answers your workspace, your name and role.
 
 ## 2. Other clients and CI
 
 - **claude.ai or Claude Desktop**: Settings, Connectors, "Add custom connector", URL `https://api.wibo.app/mcp`; approve it on the Workspace page that opens. For the skills, download [wibo-artifact.zip](https://github.com/wibofamily/skills/releases/latest/download/wibo-artifact.zip) or [wibo-agent.zip](https://github.com/wibofamily/skills/releases/latest/download/wibo-agent.zip) and upload it under Settings, Capabilities, Skills.
-- **Scripts and GitHub Actions**: a personal access token (Workspace, Settings, Account, Security, "Personal access tokens") in the environment variable `WIBO_TOKEN`. The agent skill's script and GitHub Actions template need Claude Code or a terminal.
+- **Scripts and GitHub Actions**: a personal access token (Workspace, Settings, "Personal tokens") in the environment variable `WIBO_TOKEN`. The agent skill's script and GitHub Actions template need Claude Code or a terminal.
 
 ## 3. Build
 

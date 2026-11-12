@@ -11,14 +11,14 @@ A Wibo artifact published from a chat is **one module** (`artifact.tsx`, default
 
 The tools below come from the **Wibo MCP server**, `https://api.wibo.app/mcp`. If they are not available in this chat, stop and tell the person how to connect, then continue once they have:
 
-- **Claude Code** with the `wibo` plugin: the plugin declares the server as `wibo`. They type `/mcp`, pick `wibo`, sign in in the browser and choose the workspace (publishing is offered to workspace admins only). Without the plugin: a personal access token from the Workspace (Settings, Account, Security) and the `claude mcp add` command that page shows.
+- **Claude Code** with the `wibo` plugin: the plugin declares the server as `wibo`. They type `/mcp`, pick `wibo`, sign in in the browser and choose the workspace. Without the plugin: a personal access token from the Workspace (Settings, Personal tokens) and the `claude mcp add` command that page shows.
 - **claude.ai or Claude Desktop**: Settings, Connectors, add a custom connector with the URL `https://api.wibo.app/mcp` and approve it in the Workspace page that opens.
 
-Publishing (`artifact_publish_draft`) needs the publishing scope; releasing (`artifact_release`) needs a workspace admin.
+Every member of the workspace publishes drafts (`artifact_publish_draft`, the publishing scope, offered at sign-in); a member publishes only the tools they created, so pick a new id when `forbidden` says the id belongs to someone else. Releasing (`artifact_release`) is a workspace admin's: the tool is listed only to admins. If the publishing tools are missing for someone who connected before November 2026, they sign in again (`/mcp` in Claude Code, reconnect the connector in claude.ai).
 
 ## Before writing
 
-1. Call the MCP tool `tenant_context`: the tenant slug (the manifest id starts with it), the person's role (an admin can release), the language, the runtime's modules and the conventions.
+1. Call the MCP tool `tenant_context`: the tenant slug (the manifest id starts with it), the person's role and `canRelease` (true for admins), the language, the runtime's modules and the conventions.
 2. Call `connections_list` when the screen needs external data: each connection has a `connector` id (the manifest slot's `connector`), its tools with their scope, and `connection_tool_schemas` gives a tool's exact input. HubSpot's `query_crm_data` takes `{ sql, verbosityLevel }` and answers a table; see [references/connections.md](references/connections.md).
 3. Call `design_system_components` to see the `@wibo/ui` components and patterns; ask for one by name to read its props.
 
@@ -84,7 +84,7 @@ Describe every property (what it means, the allowed values, the format): the des
 
 ## Publish
 
-Call `artifact_publish_draft` with `manifest` and `files` (`{ "artifact.tsx": "...", "contracts.csv": "..." }`). The answer is the draft's URL under Tools, or a report: a compile error with its line, an import outside the runtime, a network call, a manifest problem. Fix the module and publish again (same version while the draft is yours and unreleased only if the content is identical; otherwise bump). When the person is satisfied, an admin calls `artifact_release` with the install id (or the draft is released from the Admin Panel's Installs).
+Call `artifact_publish_draft` with `manifest` and `files` (`{ "artifact.tsx": "...", "contracts.csv": "..." }`). The answer is the draft's URL under Tools, or a report: a compile error with its line, an import outside the runtime, a network call, a manifest problem. Fix the module and publish again (same version while the draft is yours and unreleased only if the content is identical; otherwise bump). Until it is released, the draft is visible only to its author and the workspace admins. When the person is satisfied: if `tenant_context` says `canRelease`, call `artifact_release` with the install id (and the audience); otherwise tell them to ask a workspace admin to release it, giving the tool's name and its link under Tools (the admin asks their own Claude to release it).
 
 ## Bringing a claude.ai artifact in
 
@@ -95,4 +95,4 @@ A page written against `window.claude` publishes with `compat: "claude"` and `cl
 - `tenant_context` says who you are; the manifest id starts with that slug.
 - Every import is a runtime module; no `fetch`; no `window.claude` without `compat`.
 - Every connection slot the module calls is in the manifest with its tool names.
-- The draft opens under Tools and shows its three states; then the admin releases it.
+- The draft opens under Tools and shows its three states; then an admin releases it.
